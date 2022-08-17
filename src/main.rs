@@ -64,9 +64,19 @@ fn main() {
     }
 
     let mut ports = args.port.into_iter().collect::<Vec<_>>();
-    ports.extend(list_rp2040().into_iter().map(|d|d.port));
+    ports.extend(list_rp2040().into_iter().map(|d| d.port));
 
     for port in ports {
-        let _ = serialport::new(port, 1200).open();
+        let open = serialport::new(&port, 1200).open();
+
+        if let Err(e) = open {
+            if e.description != "A device which does not exist was specified." {
+                eprintln!("{}: {}", port, e.description);
+            } else {
+                println!("{}: OK", port);
+            }
+        } else {
+            println!("{}: OK", port);
+        }
     }
 }
