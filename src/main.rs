@@ -13,21 +13,21 @@ mod devices;
 #[tokio::main]
 async fn main() {
     let mut args: PicoBoot = argh::from_env();
+    let devices = list_rp2040();
 
     if args.list {
-        for dev in list_rp2040() {
-            println!("2e8a:{} {} {}", dev.pid, dev.port, dev.desc);
+        for dev in devices {
+            println!("{}", dev);
         }
         return;
     }
 
     if args.port.is_none() {
-        let mut devices = list_rp2040();
         match devices.len() {
             0 => eprintln!("Error: No RP2040 devices detected."),
             1 => {
                 eprintln!("Using {} ({})", devices[0].port, devices[0].desc);
-                args.port = Some(devices.pop().unwrap().port);
+                args.port = Some(devices[0].port.clone());
             }
             _ => eprintln!("Error: Multiple RP2040 devices detected.")
         }
@@ -37,10 +37,7 @@ async fn main() {
         }
     }
 
-    let mut ports = args.port.into_iter().collect::<Vec<_>>();
-    ports.extend(list_rp2040().into_iter().map(|d| d.port));
-
-    for port in ports {
+    if let Some(port) = args.port {
         send_to_bootloader(&port);
     }
 }
