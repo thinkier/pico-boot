@@ -50,7 +50,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     loop {
         connect(args.port.as_ref().unwrap()).await.unwrap();
-        eprintln!("Device disconnected. Press any key to continue...");
+        eprintln!("Device disconnected. Press any key to reconnect...");
 
         let cont = wait_for_any_key();
         let sigterm = tokio::signal::ctrl_c();
