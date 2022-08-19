@@ -1,8 +1,5 @@
 use std::error::Error;
-use std::time::Duration;
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader, stdin};
-use tokio::task::JoinHandle;
-use tokio::time::sleep;
 
 use tokio_serial::{SerialPort, SerialPortBuilderExt};
 
@@ -24,7 +21,7 @@ pub async fn connect(port: &str) -> Result<(), Box<dyn Error>> {
                 print!("{}", String::from_utf8_lossy(&serial_buf[..n]));
             }
             stdin_read = stdin_read => {
-                let n = stdin_read?;
+                let _ = stdin_read?;
                 port.write_all(stdin_buf.as_bytes()).await?;
             }
             _ = tokio::signal::ctrl_c() => {

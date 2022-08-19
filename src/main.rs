@@ -3,9 +3,7 @@ extern crate tokio_serial;
 
 use std::error::Error;
 use std::process;
-use std::time::Duration;
 use tokio::io::{AsyncReadExt, stdin};
-use tokio::time::sleep;
 use crate::args::PicoBoot;
 use crate::bootloader::send_to_bootloader;
 use crate::devices::list_rp2040;
