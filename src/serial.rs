@@ -10,10 +10,10 @@ pub async fn connect(port: &str) -> Result<(), Box<dyn Error>> {
     port.write_data_terminal_ready(true)?;
 
     let mut serial_buf = [0; 4096];
-    let mut stdin_buf = String::new();
+    let mut stdin_buf = Vec::new();
     loop {
         let serial_read = port.read(&mut serial_buf);
-        let stdin_read = input.read_line(&mut stdin_buf);
+        let stdin_read = input.read_until(b'\n', &mut stdin_buf);
 
         tokio::select! {
             serial_read = serial_read => {
@@ -22,10 +22,10 @@ pub async fn connect(port: &str) -> Result<(), Box<dyn Error>> {
             }
             stdin_read = stdin_read => {
                 let _ = stdin_read?;
-                port.write_all(stdin_buf.as_bytes()).await?;
+                port.write_all(&stdin_buf).await?;
             }
             _ = tokio::signal::ctrl_c() => {
-                println!("Sending device into bootloader mode...");
+                eprintln!("Sending device into bootloader mode...");
                 let _ = port.set_baud_rate(1200);
                 return Ok(());
             }

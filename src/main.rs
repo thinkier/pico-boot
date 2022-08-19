@@ -47,19 +47,21 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
 
     loop {
-        connect(args.port.as_ref().unwrap()).await.unwrap();
-        eprintln!("Device disconnected. Press any key to reconnect...");
+        if let Err(e) = connect(args.port.as_ref().unwrap()).await {
+            eprintln!("Device disconnected: {}", e.to_string());
+        }
+        eprintln!("Press Enter to reconnect...");
 
         let cont = wait_for_any_key();
         let sigterm = tokio::signal::ctrl_c();
 
         tokio::select! {
             _ = sigterm => {
-                println!("Ctrl-C received, exiting...");
+                eprintln!("Ctrl-C received, exiting...");
                 process::exit(0);
             }
             _ = cont => {
-                println!("Reconnecting...");
+                eprintln!("Reconnecting...");
             }
         }
     }
