@@ -26,7 +26,7 @@ async fn main() {
         match devices.len() {
             0 => eprintln!("Error: No RP2040 devices detected."),
             1 => {
-                eprintln!("Using {} ({})", devices[0].port, devices[0].desc);
+                eprintln!("Using {}", devices[0]);
                 args.port = Some(devices[0].port.clone());
             }
             _ => eprintln!("Error: Multiple RP2040 devices detected.")

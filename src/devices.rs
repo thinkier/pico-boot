@@ -30,7 +30,7 @@ pub fn list_rp2040() -> Vec<Rp2040Device> {
             if let SerialPortType::UsbPort(info) = p.port_type {
                 if info.vid == 0x2E8A {
                     return Some(Rp2040Device {
-                        vid: format!("{:04X}", info.vid),
+                        vid: format!("{:04x}", info.vid),
                         pid: format!("{:04x}", info.pid),
                         desc: get_rp2040_name(info.pid),
                         port: p.port_name,
