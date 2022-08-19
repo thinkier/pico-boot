@@ -1,17 +1,23 @@
 extern crate argh;
 extern crate tokio_serial;
 
+use std::error::Error;
 use std::process;
+use std::time::Duration;
+use tokio::io::{AsyncReadExt, stdin};
+use tokio::time::sleep;
 use crate::args::PicoBoot;
 use crate::bootloader::send_to_bootloader;
 use crate::devices::list_rp2040;
+use crate::serial::connect;
 
 mod args;
 mod bootloader;
 mod devices;
+mod serial;
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Box<dyn Error>> {
     let mut args: PicoBoot = argh::from_env();
     let devices = list_rp2040();
 
@@ -19,7 +25,7 @@ async fn main() {
         for dev in devices {
             println!("{}", dev);
         }
-        return;
+        return Ok(());
     }
 
     if args.port.is_none() {
@@ -33,11 +39,36 @@ async fn main() {
         }
 
         if args.port.is_none() {
-            process::exit(3)
+            process::exit(3);
         }
     }
 
-    if let Some(port) = args.port {
-        send_to_bootloader(&port);
+    if args.bootloader {
+        send_to_bootloader(args.port.as_ref().unwrap());
+        return Ok(());
     }
+
+    loop {
+        connect(args.port.as_ref().unwrap()).await.unwrap();
+        eprintln!("Device disconnected. Press any key to continue...");
+
+        let cont = wait_for_any_key();
+        let sigterm = tokio::signal::ctrl_c();
+
+        tokio::select! {
+            _ = sigterm => {
+                println!("Ctrl-C received, exiting...");
+                process::exit(0);
+            }
+            _ = cont => {
+                println!("Reconnecting...");
+            }
+        }
+    }
+}
+
+async fn wait_for_any_key() -> Result<(), Box<dyn Error>> {
+    stdin().read_u8().await?;
+
+    return Ok(());
 }
