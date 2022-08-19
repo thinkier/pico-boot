@@ -1,7 +1,5 @@
-# pico-boot
-Send all (or some of) your connected pico into bootloader mode!
-
-*Except if it's running MicroPython, and it decided to crash. Then you might need to unplug and press boot while plugging it back in.
+# pico-serial
+Connect to a pico over serial with some helper features.
 
 # Usage
 ```

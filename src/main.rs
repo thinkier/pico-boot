@@ -1,56 +1,18 @@
 extern crate argh;
-extern crate serialport;
+extern crate tokio_serial;
 
-use argh::FromArgs;
-use serialport::SerialPortType;
+use std::process;
+use crate::args::PicoBoot;
+use crate::bootloader::send_to_bootloader;
+use crate::devices::list_rp2040;
 
-include!(concat!(env!("OUT_DIR"), "/rp2040_pids.rs"));
+mod args;
+mod bootloader;
+mod devices;
 
-#[derive(FromArgs)]
-/// Send all (or some of) your connected pico into bootloader mode!
-struct PicoBoot {
-    /// list all connected rp2040 devices
-    #[argh(switch, short = 'l')]
-    pub list: bool,
-
-    /// send all connected rp2040 devices into bootloader mode
-    #[argh(switch, short = 'a')]
-    pub all: bool,
-
-    /// send a specific rp2040 device into bootloader mode, identified by its port
-    #[argh(positional)]
-    pub port: Option<String>,
-}
-
-#[derive(Debug)]
-struct Rp2040Device {
-    pid: String,
-    desc: &'static str,
-    port: String,
-}
-
-fn list_rp2040() -> Vec<Rp2040Device> {
-    serialport::available_ports()
-        .unwrap()
-        .into_iter()
-        .filter_map(|p| {
-            if let SerialPortType::UsbPort(info) = p.port_type {
-                if info.vid == 0x2E8A {
-                    return Some(Rp2040Device {
-                        pid: format!("{:04x}", info.pid),
-                        desc: get_rp2040_name(info.pid),
-                        port: p.port_name,
-                    });
-                }
-            }
-
-            return None;
-        })
-        .collect::<Vec<_>>()
-}
-
-fn main() {
-    let args: PicoBoot = argh::from_env();
+#[tokio::main]
+async fn main() {
+    let mut args: PicoBoot = argh::from_env();
 
     if args.list {
         for dev in list_rp2040() {
@@ -59,24 +21,26 @@ fn main() {
         return;
     }
 
-    if args.all && args.port.is_some() {
-        eprintln!("Please only specify -a OR a port.")
+    if args.port.is_none() {
+        let mut devices = list_rp2040();
+        match devices.len() {
+            0 => eprintln!("Error: No RP2040 devices detected."),
+            1 => {
+                eprintln!("Using {} ({})", devices[0].port, devices[0].desc);
+                args.port = Some(devices.pop().unwrap().port);
+            }
+            _ => eprintln!("Error: Multiple RP2040 devices detected.")
+        }
+
+        if args.port.is_none() {
+            process::exit(3)
+        }
     }
 
     let mut ports = args.port.into_iter().collect::<Vec<_>>();
     ports.extend(list_rp2040().into_iter().map(|d| d.port));
 
     for port in ports {
-        let open = serialport::new(&port, 1200).open();
-
-        if let Err(e) = open {
-            if e.description != "A device which does not exist was specified." {
-                eprintln!("{}: {}", port, e.description);
-            } else {
-                println!("{}: OK", port);
-            }
-        } else {
-            println!("{}: OK", port);
-        }
+        send_to_bootloader(&port);
     }
 }
