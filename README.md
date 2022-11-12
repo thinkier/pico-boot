@@ -1,11 +1,11 @@
 # pico-serial
 Connect to a pico over serial with some helper features.
 
-Currently only supports windows.
+Currently only supports Windows and MacOS.
 
 # Usage
 ```
-Usage: pico-serial.exe [<port>] [-l] [-b]
+Usage: pico-serial [<port>] [-l] [-b]
 
 Send all (or some of) your connected pico into bootloader mode!
 
